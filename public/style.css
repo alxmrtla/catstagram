@@ -4,18 +4,6 @@ body {
     padding: 20px;
   }
 
-  img {
-    max-width: 90%;
-    height: auto;
-    border-radius: 8px;
-    margin-top: 20px;
-    box-shadow: 3px 3px 5px lightgray;
-  }
-
-  #interactionContainer {
-    margin-top: 20px;
-  }
-
   button {
     padding: 10px 20px;
     margin: 10px;
@@ -56,4 +44,38 @@ body {
   }
 #delete-btn:hover {
     background-color: rgb(210, 96, 96);
+}
+
+.cat-image-frame {
+  width: 400px;
+  height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  margin: auto;
+  box-shadow: 3px 3px 5px lightgray;
+}
+
+.cat-image-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+#like-button:hover {
+  background-color: lightcoral;
+}
+
+#dislike-button:hover {
+  background-color: rgb(35, 6, 6);
+
+}
+
+.nav-button:hover {
+  background-color: rgb(94, 141, 94);
+}
+
+.comment-button:hover {
+  background-color: rgb(94, 141, 94);
 }
