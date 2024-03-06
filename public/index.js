@@ -1,67 +1,59 @@
 window.onload = async function() {
     await fetchAndDisplayCatImage();
-    // Removed addUIElements since UI elements are now added dynamically per image
+    addUIElementsPerImage();
+    // addNavigationButtons();
+
 };
+
+let currentImageIndex = 0;
+let imagesData = [];
 
 async function fetchAndDisplayCatImage() {
     try {
-        const response = await fetch('https://api.thecatapi.com/v1/images/search?limit=10000', {
+        const response = await fetch('https://api.thecatapi.com/v1/images/search?limit=100', {
             headers: {
                 'x-api-key': 'live_7bMcjDKr1S8ucVqcT6HI12SNzBR882GNdluej0AOzBQZdBMWSKQItuQIntXehwQW'
             }
         });
-        const data = await response.json();
-        const catImageContainer = document.getElementById('catImageContainer');
-        catImageContainer.innerHTML = ''; // Clear the container for new images
-
-        data.forEach((catData) => {
-            // Only proceed if breed information is available
-            if (catData.breeds && catData.breeds.length > 0) {
-                const breed = catData.breeds[0];
-
-                // Validate the presence of required information
-                if (breed.name && breed.temperament && breed.origin && breed.weight && breed.weight.imperial) {
-                    const catImageDiv = document.createElement('div');
-                    catImageDiv.className = 'cat-image-div';
-
-                    const catImage = document.createElement('img');
-                    catImage.src = catData.url;
-                    catImage.alt = 'Random Cat';
-                    catImage.dataset.id = catData.id;
-                    catImage.style.width = '200px';
-                    catImageDiv.appendChild(catImage);
-
-                    const catInfoDiv = document.createElement('div');
-                    catInfoDiv.className = 'cat-info';
-
-                    // Displaying additional information
-                    const nameBreed = document.createElement('p');
-                    nameBreed.textContent = `Name/Breed: ${breed.name}`;
-                    const temperament = document.createElement('p');
-                    temperament.textContent = `Temperament: ${breed.temperament}`;
-                    const origin = document.createElement('p');
-                    origin.textContent = `Origin: ${breed.origin}`;
-                    const weight = document.createElement('p');
-                    weight.textContent = `Weight: ${breed.weight.imperial} lbs`;
-
-                    [nameBreed, temperament, origin, weight].forEach(element => catInfoDiv.appendChild(element));
-
-                    catImageDiv.appendChild(catInfoDiv);
-                    catImageContainer.appendChild(catImageDiv);
-
-                    // Call function to add UI elements for each image
-                    addUIElementsPerImage(catImageDiv, catData.id);
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Failed to fetch cat image:', error);
+        const allImages = await response.json();
+        imagesData = allImages.filter(catData => catData.breeds && catData.breeds.length > 0);
+        if(imagesData.length > 0) {
+            displayImage(currentImageIndex);
+        }
+    } catch(error) {
+        console.error('Failed to fetch cat images: ', error);
     }
 }
 
 
+    function displayImage(index) {
+        const catImageContainer = document.getElementById('catImageContainer');
+        catImageContainer.innerHTML = ''; // Clear the container for a new image
+
+        if (imagesData[index]) {
+            const catData = imagesData[index];
+            const catImage = document.createElement('img');
+            catImage.src = catData.url;
+            catImage.alt = 'Random Cat';
+            catImage.style.width = '200px';
+            catImageContainer.appendChild(catImage);
+
+            // Display breed information
+            const catInfo = document.createElement('p');
+            catInfo.innerHTML = `Breed: ${catData.breeds[0].name}, Temperament: ${catData.breeds[0].temperament},
+                                 Weight: ${catData.breeds[0].weight.imperial} lbs`;
+            catImageContainer.appendChild(catInfo);
+
+            //comments for this image are displayed
+            addUIElementsPerImage(catImageContainer, catData.id);
+            displayComments(imageId);
+            updateLikesDisplay(catData.id);
+
+        }
+    }
 
 function addUIElementsPerImage(parentElement, imageId) {
+
     // Likes display
     const likesDisplay = document.createElement('div');
     likesDisplay.id = 'likesDisplay-' + imageId; // Unique ID for likes display
@@ -89,6 +81,27 @@ function addUIElementsPerImage(parentElement, imageId) {
     const commentsContainer = document.createElement('div');
     commentsContainer.id = 'commentsContainer-' + imageId; // Unique ID for comments container
     parentElement.appendChild(commentsContainer);
+
+    // Previous button
+    const prevButton = document.createElement('button');
+    prevButton.textContent = 'Previous';
+    prevButton.onclick = () => {
+        if (currentImageIndex > 0) {
+            currentImageIndex -= 1;
+            displayImage(currentImageIndex);
+        }
+    };
+    parentElement.appendChild(prevButton);
+     // Next button
+     const nextButton = document.createElement('button');
+     nextButton.textContent = 'Next';
+     nextButton.onclick = () => {
+         if (currentImageIndex < imagesData.length - 1) {
+             currentImageIndex += 1;
+             displayImage(currentImageIndex);
+         }
+     };
+     parentElement.appendChild(nextButton);
 }
 
 function handleCommentSubmit(event, imageId) {
@@ -124,14 +137,35 @@ function displayComments(imageId) {
     const data = loadData();
     const commentsContainer = document.getElementById('commentsContainer-' + imageId);
     commentsContainer.innerHTML = ''; // Clear existing comments
+
     if (data[imageId] && data[imageId].comments) {
-        data[imageId].comments.forEach(comment => {
-            const commentElement = document.createElement('div');
-            commentElement.textContent = comment;
-            commentsContainer.appendChild(commentElement);
+        data[imageId].comments.forEach((comment, index) => {
+            const commentDiv = document.createElement('div');
+            const commentText = document.createElement('span');
+            commentText.textContent = comment;
+            commentDiv.appendChild(commentText);
+
+            // delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.id = "delete-btn";
+            deleteBtn.onclick = () => deleteComment(imageId, index); // Attach deletion handler
+            commentDiv.appendChild(deleteBtn);
+
+            commentsContainer.appendChild(commentDiv);
         });
     }
 }
+function deleteComment(imageId, commentIndex) {
+    let data = loadData();
+    if (data[imageId] && data[imageId].comments) {
+        // Remove the comment at the specified index
+        data[imageId].comments.splice(commentIndex, 1);
+        saveData(data); // Save the updated data to localStorage
+        displayComments(imageId); // Refresh the comments display
+    }
+}
+
 
 function loadData() {
     const data = localStorage.getItem('catData');
